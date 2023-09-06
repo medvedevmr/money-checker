@@ -25,7 +25,7 @@ async def start_paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Which currency do you prefer?",
         reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard, one_time_keyboard=True, input_field_placeholder="Which currency?"
+            reply_keyboard, resize_keyboard=True, one_time_keyboard=True, input_field_placeholder="Which currency?"
         ),
     )
     return CURRENCY
@@ -43,11 +43,11 @@ async def paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
     current_list[1] = float(user.text)
     balance[0] -= current_list[1]
-    reply_keyboard = [["Food", "Fun", "Delivery", "Others"]]
+    reply_keyboard = [["Groceries","Shopping","Delivery","Restaurants"],["Hobby","Cosmetics","Withdrawals","Others"]]
     await update.message.reply_text(
         "Which category?",
         reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard, one_time_keyboard=True, input_field_placeholder="Which category?"
+            reply_keyboard, resize_keyboard=True, one_time_keyboard=True, input_field_placeholder="Which category?"
         ),
     )
     return CATEGORY
@@ -68,7 +68,7 @@ async def start_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Which currency do you make deposit?",
         reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard, one_time_keyboard=True, input_field_placeholder="Which currency?"
+            reply_keyboard, resize_keyboard=True, one_time_keyboard=True, input_field_placeholder="Which currency?"
         ),
     )
     return CURRENCY
@@ -113,7 +113,7 @@ if __name__ == '__main__':
         states={
             CURRENCY: [MessageHandler(filters.Regex("^(USD|EURO|RUB|RSD)$"), currency_paid)],
             PAID: [MessageHandler(filters.TEXT,paid)],
-            CATEGORY: [MessageHandler(filters.Regex("^(Food|Fun|Delivery|Others)$"), category)]
+            CATEGORY: [MessageHandler(filters.Regex("^(Groceries|Shopping|Delivery|Restaurants|Hobby|Cosmetics|Withdrawals|Others)$"), category)]
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
