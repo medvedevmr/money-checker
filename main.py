@@ -13,6 +13,8 @@ current_list = ['Paid', 100.0, 'USD', 'Food', 'Max']
 
 balance = [1000]
 
+personal_token = open("token.txt","r").read().strip('\n')
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Hi, {}! Let's count!".format(update.message.from_user.first_name))
     
@@ -104,7 +106,7 @@ async def balance_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Your current balance {} {}".format(balance[0],'USD'))
 
 if __name__ == '__main__':
-    application = ApplicationBuilder().token('6016631535:AAGW1Dn7Datpmawi9LavDUWSVIliYP6DPDI').build()
+    application = ApplicationBuilder().token(personal_token).build()
     
     conv_handler_paid = ConversationHandler(
         entry_points=[CommandHandler('paid',start_paid)],
@@ -131,5 +133,3 @@ if __name__ == '__main__':
     application.add_handler(balance_handler)
     
     application.run_polling()
-    
-    """comment"""
