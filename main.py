@@ -1,5 +1,6 @@
 import logging
 import currency_requests
+import csv_writer
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import ( Application, ApplicationBuilder, ContextTypes, CommandHandler, ConversationHandler, MessageHandler, filters,)
 
@@ -60,7 +61,7 @@ async def category(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
     current_list[3] = user.text
     current_list[4] = user.from_user.first_name
-    print(current_list)
+    csv_writer.add_cache(current_list)
     await update.message.reply_text("Counted! {} {} is avaliable on your account".format(round(balance[0]*rate[0],2),current_list[2]))
     return ConversationHandler.END
 
@@ -93,7 +94,7 @@ async def deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     balance[0] += (current_list[1]/rate[0])
     current_list[3] = 'Deposit'
     current_list[4] = user.from_user.first_name
-    print(current_list)
+    csv_writer.add_cache(current_list)
     await update.message.reply_text("Counted! {} {} is avaliable on your account".format(round(balance[0]*rate[0],2),current_list[2]))
     return ConversationHandler.END
 
