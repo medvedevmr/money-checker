@@ -1,4 +1,5 @@
 import logging
+import currency_requests
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import ( Application, ApplicationBuilder, ContextTypes, CommandHandler, ConversationHandler, MessageHandler, filters,)
 
@@ -7,11 +8,13 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-CURRENCY, PAID, DEPOSIT, STATS, CATEGORY = range(5)
+CURRENCY_PAID, CURRENCY_DEPOSIT, CURRENCY_BALANCE, PAID, DEPOSIT, STATS, CATEGORY = range(7)
 
 current_list = ['Paid', 100.0, 'USD', 'Food', 'Max']
 
 balance = [1000]
+
+rate = [0]
 
 personal_token = open("token.txt","r").read().strip('\n')
 
@@ -20,15 +23,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
 """PAID PART"""
 async def start_paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_keyboard = [["USD", "EURO", "RUB", "RSD"]]
+    reply_keyboard = [["USD", "EUR", "RUB", "RSD"]]
     current_list[0] = 'Paid'
     await update.message.reply_text(
-        "Which currency do you prefer?",
+        "In what currency did you spend money?",
         reply_markup=ReplyKeyboardMarkup(
             reply_keyboard, resize_keyboard=True, one_time_keyboard=True, input_field_placeholder="Which currency?"
         ),
     )
-    return CURRENCY
+    return CURRENCY_PAID
 
 async def currency_paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
@@ -42,7 +45,8 @@ async def currency_paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
     current_list[1] = float(user.text)
-    balance[0] -= current_list[1]
+    rate[0] = currency_requests.get_rate(current_list[2])
+    balance[0] -= (current_list[1]/rate[0])
     reply_keyboard = [["Groceries","Shopping","Delivery","Restaurants"],["Hobby","Cosmetics","Withdrawals","Others"]]
     await update.message.reply_text(
         "Which category?",
@@ -57,21 +61,21 @@ async def category(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_list[3] = user.text
     current_list[4] = user.from_user.first_name
     print(current_list)
-    await update.message.reply_text("Counted! {} {} is avaliable on your account".format(balance[0],'USD'))
+    await update.message.reply_text("Counted! {} {} is avaliable on your account".format(round(balance[0]*rate[0],2),current_list[2]))
     return ConversationHandler.END
 
 """DEPOSIT PART"""
 
 async def start_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_keyboard = [["USD", "EURO", "RUB", "RSD"]]
+    reply_keyboard = [["USD", "EUR", "RUB", "RSD"]]
     current_list[0] = 'Deposit'
     await update.message.reply_text(
-        "Which currency do you make deposit?",
+        "Which currency did you make deposit?",
         reply_markup=ReplyKeyboardMarkup(
             reply_keyboard, resize_keyboard=True, one_time_keyboard=True, input_field_placeholder="Which currency?"
         ),
     )
-    return CURRENCY
+    return CURRENCY_DEPOSIT
 
 async def currency_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
@@ -85,13 +89,31 @@ async def currency_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
     current_list[1] = float(user.text)
-    balance[0] += current_list[1]
+    rate[0] = currency_requests.get_rate(current_list[2])
+    balance[0] += (current_list[1]/rate[0])
     current_list[3] = 'Deposit'
     current_list[4] = user.from_user.first_name
     print(current_list)
-    await update.message.reply_text("Counted! {} {} is avaliable on your account".format(balance[0],'USD'))
+    await update.message.reply_text("Counted! {} {} is avaliable on your account".format(round(balance[0]*rate[0],2),current_list[2]))
     return ConversationHandler.END
 
+"""Check Balance"""
+async def start_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    reply_keyboard = [["USD", "EUR", "RUB", "RSD"]]
+    await update.message.reply_text(
+        "Which currency do you prefer?",
+        reply_markup=ReplyKeyboardMarkup(
+            reply_keyboard, resize_keyboard=True, one_time_keyboard=True, input_field_placeholder="Which currency?"
+        ),
+    )
+    return CURRENCY_BALANCE
+
+async def balance_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.message.text
+    rate[0] = currency_requests.get_rate(user)
+    await update.message.reply_text("Your current balance {} {}".format(round(balance[0]*rate[0],2),user))
+    return ConversationHandler.END
+    
 """Cancels and ends the conversation."""
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
@@ -101,17 +123,18 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     return ConversationHandler.END
 
-"""Check Balance"""
-async def balance_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Your current balance {} {}".format(balance[0],'USD'))
-
 if __name__ == '__main__':
+    #exhange_rates = currency_requests.request_rate()
+    
     application = ApplicationBuilder().token(personal_token).build()
+    
+    start_handler = CommandHandler('start',start)
+    application.add_handler(start_handler)
     
     conv_handler_paid = ConversationHandler(
         entry_points=[CommandHandler('paid',start_paid)],
         states={
-            CURRENCY: [MessageHandler(filters.Regex("^(USD|EURO|RUB|RSD)$"), currency_paid)],
+            CURRENCY_PAID: [MessageHandler(filters.Regex("^(USD|EUR|RUB|RSD)$"), currency_paid)],
             PAID: [MessageHandler(filters.TEXT,paid)],
             CATEGORY: [MessageHandler(filters.Regex("^(Groceries|Shopping|Delivery|Restaurants|Hobby|Cosmetics|Withdrawals|Others)$"), category)]
         },
@@ -122,14 +145,20 @@ if __name__ == '__main__':
     conv_handler_deposit = ConversationHandler(
         entry_points=[CommandHandler('deposit',start_deposit)],
         states={
-            CURRENCY: [MessageHandler(filters.Regex("^(USD|EURO|RUB|RSD)$"), currency_deposit)],
+            CURRENCY_DEPOSIT: [MessageHandler(filters.Regex("^(USD|EUR|RUB|RSD)$"), currency_deposit)],
             DEPOSIT: [MessageHandler(filters.TEXT,deposit)]
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
     application.add_handler(conv_handler_deposit)
     
-    balance_handler = CommandHandler('balance',balance_check)
-    application.add_handler(balance_handler)
+    conv_handler_balance = ConversationHandler(
+        entry_points=[CommandHandler('balance',start_balance)],
+        states={
+            CURRENCY_BALANCE: [MessageHandler(filters.Regex("^(USD|EUR|RUB|RSD)$"), balance_check)]
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+    application.add_handler(conv_handler_balance)
     
     application.run_polling()
