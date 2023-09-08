@@ -1,4 +1,8 @@
+import json
 import requests
+
+f = open('data_file.json')
+data = json.load(f)
 
 #exchange_lst = []
 exchange_lst = [{'result': 'success', 'documentation': 'https://www.exchangerate-api.com/docs', 'terms_of_use': 'https://www.exchangerate-api.com/terms', 'time_last_update_unix': 1694044801, 'time_last_update_utc': 'Thu, 07 Sep 2023 00:00:01 +0000', 'time_next_update_unix': 1694131201, 'time_next_update_utc': 'Fri, 08 Sep 2023 00:00:01 +0000', 'base_code': 'USD', 'conversion_rates': {'USD': 1, 'AED': 3.6725, 'AFN': 73.6583, 'ALL': 100.5806, 'AMD': 385.8786, 'ANG': 1.79, 'AOA': 835.1573, 'ARS': 350.0, 'AUD': 1.5666, 'AWG': 1.79, 'AZN': 1.7, 'BAM': 1.8236, 'BBD': 2.0, 'BDT': 109.7269, 'BGN': 1.8236, 'BHD': 0.376, 'BIF': 2827.0724, 'BMD': 1.0, 'BND': 1.363, 'BOB': 6.9288, 'BRL': 4.9737, 'BSD': 1.0, 'BTN': 83.1945, 'BWP': 13.7423, 'BYN': 3.0243, 'BZD': 2.0, 'CAD': 1.3645, 'CDF': 2389.7231, 'CHF': 0.8913, 'CLP': 873.7709, 'CNY': 7.3157, 'COP': 4094.7877, 'CRC': 536.3631, 'CUP': 24.0, 'CVE': 102.8126, 'CZK': 22.5939, 'DJF': 177.721, 'DKK': 6.9551, 'DOP': 56.7239, 'DZD': 137.0032, 'EGP': 30.9082, 
@@ -7,14 +11,22 @@ exchange_lst = [{'result': 'success', 'documentation': 'https://www.exchangerate
 'TRY': 26.8314, 'TTD': 6.757, 'TVD': 1.5666, 'TWD': 31.9492, 'TZS': 2506.1425, 'UAH': 36.9342, 'UGX': 3727.348, 'UYU': 37.7254, 'UZS': 12104.2067, 'VES': 33.1115, 'VND': 24035.643, 'VUV': 122.0483, 
 'WST': 2.7765, 'XAF': 611.623, 'XCD': 2.7, 'XDR': 0.7558, 'XOF': 611.623, 'XPF': 111.2667, 'YER': 250.2035, 'ZAR': 19.224, 'ZMW': 20.5666, 'ZWL': 4650.7373}}]
 
+def get_privacy_list():
+    privacy_list = data['person_array']
+    return privacy_list
+
+def get_token():
+    token = data['telegram_token']
+    return token
+
 def request_rate():
     # Where USD is the base currency you want to use
-    url = open("exchange_url.txt","r").read().strip('\n')
+    url = data['exchange_url']
     
     # Making our request
     response = requests.get(url)
-    data = response.json()
-    exchange_lst.append(data)
+    exchange_data = response.json()
+    exchange_lst.append(exchange_data)
     return
 
 def get_rate(currency):

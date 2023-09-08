@@ -1,5 +1,5 @@
 import logging
-import currency_requests
+import microservices
 import csv_writer
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import ( Application, ApplicationBuilder, ContextTypes, CommandHandler, ConversationHandler, MessageHandler, filters,)
@@ -17,22 +17,28 @@ balance = [1000]
 
 rate = [0]
 
-personal_token = open("token.txt","r").read().strip('\n')
+personal_token = microservices.get_token()
+
+privacy_list = microservices.get_privacy_list()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Hi, {}! Let's count!".format(update.message.from_user.first_name))
+    user_id = str(update.message.from_user.id)
+    if user_id in privacy_list:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Hi, {}! Let's count!".format(update.message.from_user.first_name))
     
 """PAID PART"""
 async def start_paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_keyboard = [["USD", "EUR", "RUB", "RSD"]]
-    current_list[0] = 'Paid'
-    await update.message.reply_text(
-        "In what currency did you spend money?",
-        reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard, resize_keyboard=True, one_time_keyboard=True, input_field_placeholder="Which currency?"
-        ),
-    )
-    return CURRENCY_PAID
+    user_id = str(update.message.from_user.id)
+    if user_id in privacy_list:
+        reply_keyboard = [["USD", "EUR", "RUB", "RSD"]]
+        current_list[0] = 'Paid'
+        await update.message.reply_text(
+            "In what currency did you spend money?",
+            reply_markup=ReplyKeyboardMarkup(
+                reply_keyboard, resize_keyboard=True, one_time_keyboard=True, input_field_placeholder="Which currency?"
+            ),
+        )
+        return CURRENCY_PAID
 
 async def currency_paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
@@ -46,7 +52,7 @@ async def currency_paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
     current_list[1] = float(user.text)
-    rate[0] = currency_requests.get_rate(current_list[2])
+    rate[0] = microservices.get_rate(current_list[2])
     balance[0] -= (current_list[1]/rate[0])
     reply_keyboard = [["Groceries","Shopping","Delivery","Restaurants"],["Hobby","Cosmetics","Withdrawals","Others"]]
     await update.message.reply_text(
@@ -68,15 +74,17 @@ async def category(update: Update, context: ContextTypes.DEFAULT_TYPE):
 """DEPOSIT PART"""
 
 async def start_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_keyboard = [["USD", "EUR", "RUB", "RSD"]]
-    current_list[0] = 'Deposit'
-    await update.message.reply_text(
-        "Which currency did you make deposit?",
-        reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard, resize_keyboard=True, one_time_keyboard=True, input_field_placeholder="Which currency?"
-        ),
-    )
-    return CURRENCY_DEPOSIT
+    user_id = str(update.message.from_user.id)
+    if user_id in privacy_list:
+        reply_keyboard = [["USD", "EUR", "RUB", "RSD"]]
+        current_list[0] = 'Deposit'
+        await update.message.reply_text(
+            "Which currency did you make deposit?",
+            reply_markup=ReplyKeyboardMarkup(
+                reply_keyboard, resize_keyboard=True, one_time_keyboard=True, input_field_placeholder="Which currency?"
+            ),
+        )
+        return CURRENCY_DEPOSIT
 
 async def currency_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
@@ -90,7 +98,7 @@ async def currency_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
     current_list[1] = float(user.text)
-    rate[0] = currency_requests.get_rate(current_list[2])
+    rate[0] = microservices.get_rate(current_list[2])
     balance[0] += (current_list[1]/rate[0])
     current_list[3] = 'Deposit'
     current_list[4] = user.from_user.first_name
@@ -100,32 +108,36 @@ async def deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 """Check Balance"""
 async def start_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_keyboard = [["USD", "EUR", "RUB", "RSD"]]
-    await update.message.reply_text(
-        "Which currency do you prefer?",
-        reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard, resize_keyboard=True, one_time_keyboard=True, input_field_placeholder="Which currency?"
-        ),
-    )
-    return CURRENCY_BALANCE
+    user_id = str(update.message.from_user.id)
+    if user_id in privacy_list:
+        reply_keyboard = [["USD", "EUR", "RUB", "RSD"]]
+        await update.message.reply_text(
+            "Which currency do you prefer?",
+            reply_markup=ReplyKeyboardMarkup(
+                reply_keyboard, resize_keyboard=True, one_time_keyboard=True, input_field_placeholder="Which currency?"
+            ),
+        )
+        return CURRENCY_BALANCE
 
 async def balance_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.text
-    rate[0] = currency_requests.get_rate(user)
+    rate[0] = microservices.get_rate(user)
     await update.message.reply_text("Your current balance {} {}".format(round(balance[0]*rate[0],2),user))
     return ConversationHandler.END
     
 """Cancels and ends the conversation."""
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    user = update.message.from_user
-    await update.message.reply_text(
-        "Operation Cancelled", reply_markup=ReplyKeyboardRemove()
-    )
+    user_id = str(update.message.from_user.id)
+    if user_id in privacy_list:
+        user = update.message.from_user
+        await update.message.reply_text(
+            "Operation Cancelled", reply_markup=ReplyKeyboardRemove()
+        )
 
-    return ConversationHandler.END
+        return ConversationHandler.END
 
 if __name__ == '__main__':
-    #exhange_rates = currency_requests.request_rate()
+    #exhange_rates = microservices.request_rate()
     
     application = ApplicationBuilder().token(personal_token).build()
     
