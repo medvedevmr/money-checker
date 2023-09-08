@@ -1,5 +1,6 @@
 import json
 import requests
+from datetime import date
 
 f = open('data_file.json')
 data = json.load(f)
@@ -32,3 +33,8 @@ def request_rate():
 def get_rate(currency):
     rate = exchange_lst[0]['conversion_rates'][currency]
     return rate
+
+def get_date():
+    today = date.today()
+    date_lst = [today.day,today.month,today.year]
+    return date_lst

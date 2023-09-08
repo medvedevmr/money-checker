@@ -7,6 +7,7 @@ cache = []
 def add_cache(action:list):
     cloneList = action[:]
     cache.append(cloneList)
+    print(cache)
     count[0] += 1
     if count[0] == 10:
         write_to_csv(cache)
