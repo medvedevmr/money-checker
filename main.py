@@ -25,6 +25,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     if user_id in privacy_list:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Hi, {}! Let's count!".format(update.message.from_user.first_name))
+    else:
+        return ConversationHandler.END
     
 """PAID PART"""
 async def start_paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -39,6 +41,8 @@ async def start_paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ),
         )
         return CURRENCY_PAID
+    else:
+        return ConversationHandler.END
 
 async def currency_paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
@@ -85,6 +89,8 @@ async def start_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ),
         )
         return CURRENCY_DEPOSIT
+    else:
+        return ConversationHandler.END
 
 async def currency_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
@@ -118,6 +124,8 @@ async def start_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ),
         )
         return CURRENCY_BALANCE
+    else:
+        return ConversationHandler.END
 
 async def balance_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.text
@@ -134,6 +142,8 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             "Operation Cancelled", reply_markup=ReplyKeyboardRemove()
         )
 
+        return ConversationHandler.END
+    else:
         return ConversationHandler.END
 
 if __name__ == '__main__':
