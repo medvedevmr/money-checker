@@ -18,6 +18,7 @@ def stats_pic():
 
     df_grouped_sum = df_grouped.sum()
     group_vals = [x for x in df_grouped_sum]
+    group_sum = sum(group_vals)
     #print(df_grouped,df_grouped.groups.keys())
 
     # compute circle positions:
@@ -54,16 +55,23 @@ def stats_pic():
         ax.add_patch(plt.Circle((x, y), r, alpha=0.2, linewidth=2,facecolor=color))
         plt.annotate(
             label,
-            (x,y+0.02 ) ,
+            (x,y+0.03 ) ,
             va='center',
             ha='center'
         )
         plt.annotate(
             val,
-            (x,y-0.02 ) ,
+            (x,y-0.01 ) ,
+            va='center',
+            ha='center'
+        )
+        plt.annotate(
+            str(round((val/group_sum)*100,2))+'%',
+            (x,y-0.05 ) ,
             va='center',
             ha='center'
         )
     file_name = 'temp_pics/{}-{}-{}.png'.format(date[0],date[1],date[2])
     plt.savefig(file_name)
     return file_name
+stats_pic()
