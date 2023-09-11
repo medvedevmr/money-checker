@@ -1,6 +1,7 @@
 import logging
 import microservices
 import csv_writer
+import stats_visualization
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import ( Application, ApplicationBuilder, ContextTypes, CommandHandler, ConversationHandler, MessageHandler, filters,)
 
@@ -11,7 +12,7 @@ logging.basicConfig(
 
 CURRENCY_PAID, CURRENCY_DEPOSIT, CURRENCY_BALANCE, PAID, DEPOSIT, STATS, CATEGORY = range(7)
 
-current_list = ['Paid', 100.0, 'USD', 'Food', 'Max', 1000, ['01','01','2023']]
+current_list = ['Paid', 100.0, 'USD', 100, 'Food', 'Max', 1000, ['01','01','2023']]
 
 balance = [1000]
 
@@ -25,6 +26,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     if user_id in privacy_list:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Hi, {}! Let's count!".format(update.message.from_user.first_name))
+    else:
+        return ConversationHandler.END
+
+
+async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.message.from_user.id)
+    if user_id in privacy_list:
+        file_name = stats_visualization.stats_pic()
+        await context.bot.send_document (chat_id=update.effective_chat.id, document=open(file_name, 'rb'), filename=file_name)
     else:
         return ConversationHandler.END
     
@@ -57,9 +67,10 @@ async def paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
     current_list[1] = float(user.text)
     rate[0] = microservices.get_rate(current_list[2])
+    current_list[3] = round(float(user.text)/rate[0],2)
     balance[0] -= (current_list[1]/rate[0])
-    current_list[5] = balance[0]
-    current_list[6] = microservices.get_date()
+    current_list[6] = balance[0]
+    current_list[7] = microservices.get_date()
     reply_keyboard = [["Groceries","Shopping","Delivery","Restaurants"],["Hobby","Cosmetics","Withdrawals","Others"]]
     await update.message.reply_text(
         "Which category?",
@@ -71,8 +82,8 @@ async def paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def category(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
-    current_list[3] = user.text
-    current_list[4] = user.from_user.first_name
+    current_list[4] = user.text
+    current_list[5] = user.from_user.first_name
     csv_writer.add_cache(current_list)
     await update.message.reply_text("Counted! {} {} is avaliable on your account".format(round(balance[0]*rate[0],2),current_list[2]))
     return ConversationHandler.END
@@ -107,11 +118,12 @@ async def deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message
     current_list[1] = float(user.text)
     rate[0] = microservices.get_rate(current_list[2])
+    current_list[3] = round(float(user.text)/rate[0],2)
     balance[0] += (current_list[1]/rate[0])
-    current_list[3] = 'Deposit'
-    current_list[4] = user.from_user.first_name
-    current_list[5] = balance[0]
-    current_list[6] = microservices.get_date()
+    current_list[4] = 'Deposit'
+    current_list[5] = user.from_user.first_name
+    current_list[6] = balance[0]
+    current_list[7] = microservices.get_date()
     csv_writer.add_cache(current_list)
     await update.message.reply_text("Counted! {} {} is avaliable on your account".format(round(balance[0]*rate[0],2),current_list[2]))
     return ConversationHandler.END
@@ -157,6 +169,9 @@ if __name__ == '__main__':
     
     start_handler = CommandHandler('start',start)
     application.add_handler(start_handler)
+    
+    stats_handler = CommandHandler('stats',stats)
+    application.add_handler(stats_handler)
     
     conv_handler_paid = ConversationHandler(
         entry_points=[CommandHandler('paid',start_paid)],
